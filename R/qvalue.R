@@ -347,7 +347,7 @@ qvalue.gui <- function(dummy = NULL) {
 
       qout = qvalue(p = pp, lambda = lambda, pi0.method = pi0.method, fdr.level = fdr.level,
         robust = robust, gui = T)
-      if(class(qout) == "qvalue") {
+      if (inherits(quot, "qvalue")) {
         tclvalue(to.var.2) = as.character(round(qout$pi0, 4))
         assign("out", qout, inherits = T)
         postMsg(paste("done: pi_0 = ", round(qout$pi0, 4), ".\n", sep = ""))
@@ -391,7 +391,7 @@ qvalue.gui <- function(dummy = NULL) {
     else if(tclvalue(plotChoice.var) == 2) {
       if(is.null(out))
         postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(class(out) == "qvalue") {
+      else if(inherits(out, "qvalue")) {
         par(mfrow = c(1, 1))
         hist(out$qvalues, main = "Histogram of Q-Values", xlab = "")
       }
@@ -400,7 +400,7 @@ qvalue.gui <- function(dummy = NULL) {
     else {
       if(is.null(out))
         postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(class(out) == "qvalue")
+      else if(inherits(out, "qvalue"))
         qplot(out, rng = c(tclvalue(from.var.2), tclvalue(to.var.2)))
     }
   }
@@ -409,7 +409,7 @@ qvalue.gui <- function(dummy = NULL) {
     if(is.null(out))
       postMsg("ERROR: Q-values haven't been computed yet.\n")
 
-    else if(class(out) == "qvalue") {
+    else if(inherits(out, "qvalue")) {
       postMsg("Writing results to file...")
       flnm <- tclvalue(tkgetSaveFile())
       if(flnm != "") {
@@ -442,7 +442,7 @@ qvalue.gui <- function(dummy = NULL) {
     else if(tclvalue(plotChoice.var) == 2) {
       if(is.null(out))
         postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(class(out) == "qvalue") {
+      else if(inherits(out, "qvalue")) {
         flnm <- tclvalue(tkgetSaveFile(defaultextension = "pdf"))
         if(flnm != "") {
           pdf(flnm)
@@ -459,7 +459,7 @@ qvalue.gui <- function(dummy = NULL) {
     else {
       if(is.null(out))
         postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(class(out) == "qvalue") {
+      else if(inherits(out, "qvalue")) {
         flnm <- tclvalue(tkgetSaveFile(defaultextension = "pdf"))
         if(flnm != "") {
           pdf(flnm)
