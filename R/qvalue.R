@@ -1,4 +1,4 @@
-qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=NULL, robust=F, gui=F) {
+qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=NULL, robust=F, gui=F) { 
 #Input
 #=============================================================================
 #p: a vector of p-values (only necessary input)
@@ -7,10 +7,10 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
 #pi0.method: either "smoother" or "bootstrap"; the method for automatically
 #           choosing tuning parameter in the estimation of pi0, the proportion
 #           of true null hypotheses
-#robust: an indicator of whether it is desired to make the estimate more robust
-#        for small p-values and a direct finite sample estimate of pFDR (optional)
+#robust: an indicator of whether it is desired to make the estimate more robust 
+#        for small p-values and a direct finite sample estimate of pFDR (optional)  
 #gui: A flag to indicate to 'qvalue' that it should communicate with the gui.  ## change by Alan
-#     Should not be specified on command line.
+#     Should not be specified on command line. 
 #
 #Output
 #=============================================================================
@@ -18,8 +18,8 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
 #pi0: an estimate of the proportion of null p-values
 #qvalues: a vector of the estimated q-values (the main quantity of interest)
 #pvalues: a vector of the original p-values
-#significant: if fdr.level is specified, an indicator of whether the q-value
-#    fell below fdr.level (taking all such q-values to be significant controls
+#significant: if fdr.level is specified, an indicator of whether the q-value 
+#    fell below fdr.level (taking all such q-values to be significant controls 
 #    FDR at level fdr.level)
 
 #Set up communication with GUI, if appropriate
@@ -41,7 +41,7 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
     }
     if(length(lambda)>1 && length(lambda)<4) {
       if(gui)
-        eval(expression(postMsg(paste("ERROR: If length of lambda greater than 1, you need at least 4 values.",
+        eval(expression(postMsg(paste("ERROR: If length of lambda greater than 1, you need at least 4 values.", 
             "\n"))), parent.frame())
       else
         print("ERROR: If length of lambda greater than 1, you need at least 4 values.")
@@ -74,6 +74,7 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
             pi0[i] <- mean(p >= lambda[i])/(1-lambda[i])
         }
         if(pi0.method=="smoother") {
+            #library(modreg) ## change by Alan: loaded automatically now
             spi0 <- smooth.spline(lambda,pi0,df=3)
             pi0 <- predict(spi0,x=max(lambda))$y
             pi0 <- min(pi0,1)
@@ -82,7 +83,7 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
             minpi0 <- min(pi0)
             mse <- rep(0,length(lambda))
             pi0.boot <- rep(0,length(lambda))
-            for(i in 1:100) {
+            for(i in 1:100) { 
                 p.boot <- sample(p,size=m,replace=T)
                 for(i in 1:length(lambda)) {
                     pi0.boot[i] <- mean(p.boot>lambda[i])/(1-lambda[i])
@@ -100,17 +101,17 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
     if(pi0 <= 0) {
       if(gui)
         eval(expression(postMsg(
-            paste("ERROR: The estimated pi0 <= 0. Check that you have valid p-values or use another lambda method.",
+            paste("ERROR: The estimated pi0 <= 0. Check that you have valid p-values or use another lambda method.", 
                 "\n"))), parent.frame())
       else
-        print("ERROR: The estimated pi0 <= 0. Check that you have valid p-values or use another lambda method.")
+        print("ERROR: The estimated pi0 <= 0. Check that you have valid p-values or use another lambda method.") 
       return(0)
     }
     if(!is.null(fdr.level) && (fdr.level<=0 || fdr.level>1)) {  ## change by Alan:  check for valid fdr.level
       if(gui)
         eval(expression(postMsg(paste("ERROR: 'fdr.level' must be within (0, 1].", "\n"))), parent.frame())
       else
-        print("ERROR: 'fdr.level' must be within (0, 1].")
+        print("ERROR: 'fdr.level' must be within (0, 1].") 
       return(0)
     }
 #The estimated q-values calculated here
@@ -140,15 +141,16 @@ qplot <- function(qobj, rng=c(0.0, 0.1), ...) { ## change by Alan:  'rng' a vect
 #Input
 #=============================================================================
 #qobj: a q-value object returned by the qvalue function
-#rng: the range of q-values to be plotted (optional)
+#rng: the range of q-values to be plotted (optional) 
 #
 #Output
 #=============================================================================
-#Four plots:
+#Four plots: 
 #Upper-left: pi0.hat(lambda) versus lambda with a smoother
 #Upper-right: q-values versus p-values
 #Lower-left: number of significant tests per each q-value cut-off
 #Lower-right: number of expected false positives versus number of significant tests
+##library(modreg) ## change by Alan:  'modreg' automatically loaded
 q2 <- qobj$qval[order(qobj$pval)]
 if(min(q2) > rng[2]) {rng <- c(min(q2), quantile(q2, 0.1))} ## change by Alan:  replace 'rng' with vector
 p2 <- qobj$pval[order(qobj$pval)]
@@ -158,7 +160,7 @@ if(length(lambda)==1) {lambda <- seq(0,max(0.95,lambda),0.05)}
 pi0 <- rep(0,length(lambda))
 for(i in 1:length(lambda)) {
     pi0[i] <- mean(p2>lambda[i])/(1-lambda[i])
-    }
+    }    
 spi0 <- smooth.spline(lambda,pi0,df=3)
 pi00 <- round(qobj$pi0,3)
 plot(lambda,pi0,xlab=expression(lambda),ylab=expression(hat(pi)[0](lambda)),pch=".")
@@ -167,10 +169,10 @@ lines(spi0)
 
 plot(p2[q2 >= rng[1] & q2 <= rng[2]], q2[q2 >= rng[1] & q2 <= rng[2]], type = "l", xlab = "p-value", ## changes by Alan
   ylab = "q-value")
-plot(q2[q2 >= rng[1] & q2 <= rng[2]], (1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), type="l",
+plot(q2[q2 >= rng[1] & q2 <= rng[2]], (1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), type="l", 
   xlab="q-value cut-off", ylab="significant tests")
-plot((1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), q2[q2 >= rng[1] & q2 <= rng[2]] *
-  (1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), type = "l", xlab = "significant tests",
+plot((1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), q2[q2 >= rng[1] & q2 <= rng[2]] * 
+  (1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), type = "l", xlab = "significant tests", 
   ylab = "expected false positives")
 par(mfrow=c(1,1))
 }
@@ -181,14 +183,14 @@ qwrite <- function(qobj, filename="my-qvalue-results.txt") {
 #Input
 #=============================================================================
 #qobj: a q-value object returned by the qvalue function
-#filename: the name of the file where the results are written
+#filename: the name of the file where the results are written  
 #
 #Output
 #=============================================================================
 #A file sent to "filename" with the following:
 #First row: the estimate of the proportion of true negatives, pi0
 #Second row: FDR significance level (if specified) ## change by Alan
-#Third row and below: the p-values (1st column), the estimated q-values (2nd column),
+#Third row and below: the p-values (1st column), the estimated q-values (2nd column), 
 #  and indicator of significance level if appropriate (3rd column)
   cat(c("pi0:", qobj$pi0, "\n\n"), file=filename, append=F)
   if(any(names(qobj) == "fdr.level")) {
@@ -202,7 +204,7 @@ qwrite <- function(qobj, filename="my-qvalue-results.txt") {
   else {
     cat(c("p-value q-value", "\n"), file=filename, append=T)
 #    for(i in 1:length(qobj$qval)) {
-#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\n"), file=filename, append=T)
+#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\n"), file=filename, append=T)  
 #    }
     write(t(cbind(qobj$pval, qobj$qval)), file=filename, ncolumns=2, append=T)
   }
@@ -294,7 +296,7 @@ qvalue.gui <- function(dummy = NULL) {
   }
 
   level.fnc <- function() {
-    if(tclvalue(levelSpec.var) == 1)
+    if(tclvalue(levelSpec.var) == 1) 
       tkconfigure(level.ety, state = "normal")
     else
       tkconfigure(level.ety, state = "disabled")
@@ -306,8 +308,8 @@ qvalue.gui <- function(dummy = NULL) {
 
     else {
       postMsg("Computing q-values...")
-      if(tclvalue(lambda.var) == 1)
-        lambda <- seq(from = as.numeric(tclvalue(from.var.1)), to = as.numeric(tclvalue(to.var.1)),
+      if(tclvalue(lambda.var) == 1) 
+        lambda <- seq(from = as.numeric(tclvalue(from.var.1)), to = as.numeric(tclvalue(to.var.1)), 
         by = as.numeric(tclvalue(by.var.1)))
       else {
         lambda <- as.numeric(tclvalue(single.var))
@@ -342,8 +344,8 @@ qvalue.gui <- function(dummy = NULL) {
         robust <- TRUE
       else
         robust <- FALSE
-
-      qout = qvalue(p = pp, lambda = lambda, pi0.method = pi0.method, fdr.level = fdr.level,
+  
+      qout = qvalue(p = pp, lambda = lambda, pi0.method = pi0.method, fdr.level = fdr.level, 
         robust = robust, gui = T)
       if(class(qout) == "qvalue") {
         tclvalue(to.var.2) = as.character(round(qout$pi0, 4))
@@ -368,7 +370,7 @@ qvalue.gui <- function(dummy = NULL) {
     if(is.null(pp))
       postMsg("ERROR: P-values haven't been read yet.\n")
 
-    else {
+    else {     
       par(mfrow = c(1, 1))
       hist(pp, main = "Histogram of P-Values")
     }
@@ -524,7 +526,7 @@ qvalue.gui <- function(dummy = NULL) {
   tkpack(lambdaLabel.frm, fill = "x", expand = TRUE)
 
   lambdaRange.frm <- tkframe(optionsInset.frm, padx = 10)
-  range.rbtn <- tkradiobutton(lambdaRange.frm, text = "Range", font = normalFont, value = 1,
+  range.rbtn <- tkradiobutton(lambdaRange.frm, text = "Range", font = normalFont, value = 1, 
     variable = lambda.var, command = lambda.fnc)
   from.lbl.1 <- tklabel(lambdaRange.frm, text = "from:", font = normalFont)
   to.lbl.1 <- tklabel(lambdaRange.frm, text = "to:", font = normalFont)
@@ -542,9 +544,9 @@ qvalue.gui <- function(dummy = NULL) {
   tkpack(lambdaRange.frm, fill = "x", expand = TRUE)
 
   lambdaSingle.frm <- tkframe(optionsInset.frm, padx = 10)
-  single.rbtn <- tkradiobutton(lambdaSingle.frm, text = "Single No.:", font = normalFont, value = 0,
+  single.rbtn <- tkradiobutton(lambdaSingle.frm, text = "Single No.:", font = normalFont, value = 0, 
     variable = lambda.var, command = lambda.fnc)
-  single.ety <- tkentry(lambdaSingle.frm, textvariable = single.var, font = normalFont, width = 5,
+  single.ety <- tkentry(lambdaSingle.frm, textvariable = single.var, font = normalFont, width = 5, 
     state = "disabled")
   tkpack(single.rbtn, side = "left", anchor = "w")
   tkpack(single.ety, side = "left")
@@ -556,9 +558,9 @@ qvalue.gui <- function(dummy = NULL) {
   tkpack(methodLable.frm, fill = "x", expand = TRUE)
 
   methodChoice.frm <- tkframe(optionsInset.frm, padx = 10)
-  smoother.rbtn <- tkradiobutton(methodChoice.frm, text = "Smoother", font = normalFont, value = 1,
+  smoother.rbtn <- tkradiobutton(methodChoice.frm, text = "Smoother", font = normalFont, value = 1, 
     variable = pi0.var)
-  bootstrap.rbtn <- tkradiobutton(methodChoice.frm, text = "Bootstrap", font = normalFont, value = 0,
+  bootstrap.rbtn <- tkradiobutton(methodChoice.frm, text = "Bootstrap", font = normalFont, value = 0, 
     variable = pi0.var)
   tkpack(smoother.rbtn, side = "left", anchor = "w")
   tkpack(bootstrap.rbtn, side = "left", anchor = "w")
@@ -566,16 +568,16 @@ qvalue.gui <- function(dummy = NULL) {
 
   #### Specify robust method
   robust.frm <- tkframe(optionsInset.frm)
-  robust.cbtn <- tkcheckbutton(robust.frm, text = "Use robust method", font = normalFont,
+  robust.cbtn <- tkcheckbutton(robust.frm, text = "Use robust method", font = normalFont, 
     variable = robust.var)
   tkpack(robust.cbtn, anchor = "w")
   tkpack(robust.frm, fill = "x", expand = TRUE)
 
   #### Specify FDR level
   level.frm <- tkframe(optionsInset.frm)
-  level.cbtn <- tkcheckbutton(level.frm, text = "Specify FDR level:", font = normalFont,
+  level.cbtn <- tkcheckbutton(level.frm, text = "Specify FDR level:", font = normalFont, 
     variable = levelSpec.var, command = level.fnc)
-  level.ety <- tkentry(level.frm, textvariable = level.var, font = normalFont, width = 5,
+  level.ety <- tkentry(level.frm, textvariable = level.var, font = normalFont, width = 5, 
     state = "disabled")
   tkpack(level.cbtn, side = "left", anchor = "w")
   tkpack(level.ety, side = "left")
@@ -587,9 +589,9 @@ qvalue.gui <- function(dummy = NULL) {
   tkpack(tklabel(action.frm, text = "Compute Q-Values:", font = titleFont), anchor = "w")
   actionInset.frm <- tkframe(action.frm, relief = "groove", bd = 2)
 
-  execute.btn <- tkbutton(actionInset.frm, text = "Execute", font = normalFont,
+  execute.btn <- tkbutton(actionInset.frm, text = "Execute", font = normalFont, 
     command = execute.fnc)
-  saveOutput.btn <- tkbutton(actionInset.frm, text = "Save Output", font = normalFont,
+  saveOutput.btn <- tkbutton(actionInset.frm, text = "Save Output", font = normalFont, 
     command = saveOutput.fnc)
   tkpack(saveOutput.btn, side = "right", anchor = "e") ## padx argument here spreads buttons out
   tkpack(execute.btn, side = "right")
@@ -601,25 +603,25 @@ qvalue.gui <- function(dummy = NULL) {
   plotInset.frm <- tkframe(plot.frm, relief = "groove", bd = 2)
 
   pHist.frm <- tkframe(plotInset.frm, padx = 10)
-  pHist.rbtn <- tkradiobutton(pHist.frm, text = "P-value histogram", font = normalFont, value = 1,
+  pHist.rbtn <- tkradiobutton(pHist.frm, text = "P-value histogram", font = normalFont, value = 1, 
     variable = plotChoice.var, command = plotChoice.fnc)
   tkpack(pHist.rbtn, side = "left", anchor = "w")
   tkpack(pHist.frm, fill = "x", expand = TRUE)
 
   qHist.frm <- tkframe(plotInset.frm, padx = 10)
-  qHist.rbtn <- tkradiobutton(qHist.frm, text = "Q-value histogram", font = normalFont, value = 2,
+  qHist.rbtn <- tkradiobutton(qHist.frm, text = "Q-value histogram", font = normalFont, value = 2, 
     variable = plotChoice.var, command = plotChoice.fnc)
   tkpack(qHist.rbtn, side = "left", anchor = "w")
-  tkpack(qHist.frm, fill = "x", expand = TRUE)
+  tkpack(qHist.frm, fill = "x", expand = TRUE)  
 
   qPlots.frm <- tkframe(plotInset.frm, padx = 10)
-  qPlots.rbtn <- tkradiobutton(qPlots.frm, text = "Q-plots,", font = normalFont, value = 3,
+  qPlots.rbtn <- tkradiobutton(qPlots.frm, text = "Q-plots,", font = normalFont, value = 3, 
     variable = plotChoice.var, command = plotChoice.fnc)
   from.lbl.2 <- tklabel(qPlots.frm, text = "range from:", font = normalFont)
   to.lbl.2 <- tklabel(qPlots.frm, text = "to:", font = normalFont)
-  from.ety.2 <- tkentry(qPlots.frm, textvariable = from.var.2, font = normalFont, width = 7,
+  from.ety.2 <- tkentry(qPlots.frm, textvariable = from.var.2, font = normalFont, width = 7, 
     state = "disabled")
-  to.ety.2 <- tkentry(qPlots.frm, textvariable = to.var.2, font = normalFont, width = 7,
+  to.ety.2 <- tkentry(qPlots.frm, textvariable = to.var.2, font = normalFont, width = 7, 
     state = "disabled")
   tkpack(qPlots.rbtn, side = "left", anchor = "w")
   tkpack(from.lbl.2, side = "left")
@@ -653,3 +655,6 @@ qvalue.gui <- function(dummy = NULL) {
 
 }
 
+.First.lib <- function (libname, pkgname, where) {
+  library(modreg)
+}

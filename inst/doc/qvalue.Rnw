@@ -1,3 +1,4 @@
+% \VignetteDepends{modreg}
 % \VignetteIndexEntry{qvalue Tutorial}
 % \VignetteKeywords{Significance Analysis}
 % \VignettePackage{qvalue}
@@ -74,7 +75,7 @@ the experiments and data, type \texttt{? hedenfalk}.  We also check the length o
 a histogram.\\  
 
 <<input>>=
-library("qvalue")
+library(qvalue)
 data(hedenfalk)
 length(hedenfalk)
 @

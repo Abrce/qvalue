@@ -6,7 +6,7 @@
   Graphical display of qvalue objects
 }
 \usage{
-qplot(qobj, rng = c(0, 0.1), ...)
+qplot(qobj, rng = c(0.0, qobj$pi0), \ldots)
 \method{plot}{qvalue}(x, \ldots)
 }
 \arguments{
