@@ -74,8 +74,8 @@ the experiments and data, type \texttt{? hedenfalk}.  We also check the length o
 a histogram.\\  
 
 <<input>>=
-library(qvalue)
-data(hedenfalk)
+library("qvalue")
+data("hedenfalk", package="qvalue")
 length(hedenfalk)
 @
 
