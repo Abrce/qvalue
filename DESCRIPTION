@@ -1,0 +1,21 @@
+Package: qvalue
+Title: Software for calculating q-values in multiple testing situations
+Version: 1.0.0
+Author: John D. Storey <storey@stat.berkeley.edu>. R packaging by
+        Gregory R. Warnes <gregory_r_warnes@groton.pfizer.com)
+Description: This package takes a list of p-values resulting from the
+        simultaneous testing of many hypotheses and estimates their
+        q-values. The q-value of a test measures the proportion of
+        false positives incurred (called the false discovery rate)
+        when that particular test is called significant. A short
+        tutorial on q-values and false discovery rates is provided
+        with the manual. Various plots are automatically generated,
+        allowing one to make sensible significance cut-offs. Several
+        mathematical results have recently been shown on the
+        conservative accuracy of the estimated q-values from this
+        software. The software can be applied to problems in genomics,
+        brain imaging, astrophysics, and data mining.
+Maintainer: Gregory R. Warnes <gregory_r_warnes@groton.pfizer.com>
+License: Please send the original author, John D. Storey
+        <storey@stat.berkeley.edu> an email with "qvalue download" in
+        the subject line.
