@@ -18,3 +18,5 @@ Description: This package takes a list of p-values resulting from the
 Maintainer: John D. Storey <jstorey@u.washington.edu>
 Depends: R (>= 1.7.0)
 License: LGPL
+ReleaseLevel: devel
+
