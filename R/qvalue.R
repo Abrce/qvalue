@@ -1,4 +1,5 @@
-qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=NULL, robust=F, gui=F) {
+qvalue <- function(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE, 
+  gui=FALSE, smooth.df = 3, smooth.log.pi0 = FALSE) {
 #Input
 #=============================================================================
 #p: a vector of p-values (only necessary input)
@@ -11,6 +12,8 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
 #        for small p-values and a direct finite sample estimate of pFDR (optional)
 #gui: A flag to indicate to 'qvalue' that it should communicate with the gui.  ## change by Alan
 #     Should not be specified on command line.
+#smooth.df: degrees of freedom to use in smoother (optional)
+#smooth.log.pi0: should smoothing be done on log scale? (optional)
 #
 #Output
 #=============================================================================
@@ -32,6 +35,11 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
 #    }
 
 #This is just some pre-processing
+    if(is.null(p))  ## change by Alan
+      {qvalue.gui(); return("Launching point-and-click...")}
+    if(gui & !interactive())  ## change by Alan
+      gui = FALSE
+
     if(min(p)<0 || max(p)>1) {
       if(gui) ## change by Alan:  check for GUI
         eval(expression(postMsg(paste("ERROR: p-values not in valid range.", "\n"))), parent.frame())
@@ -73,10 +81,17 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
         for(i in 1:length(lambda)) {
             pi0[i] <- mean(p >= lambda[i])/(1-lambda[i])
         }
+
         if(pi0.method=="smoother") {
             #library(stats) ## change by Alan: loaded automatically now
-            spi0 <- smooth.spline(lambda,pi0,df=3)
+            if(smooth.log.pi0)
+              pi0 <- log(pi0)
+
+            spi0 <- smooth.spline(lambda,pi0,df=smooth.df)
             pi0 <- predict(spi0,x=max(lambda))$y
+
+            if(smooth.log.pi0)
+              pi0 <- exp(pi0)
             pi0 <- min(pi0,1)
         }
         else if(pi0.method=="bootstrap") {
@@ -84,7 +99,7 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
             mse <- rep(0,length(lambda))
             pi0.boot <- rep(0,length(lambda))
             for(i in 1:100) {
-                p.boot <- sample(p,size=m,replace=T)
+                p.boot <- sample(p,size=m,replace=TRUE)
                 for(i in 1:length(lambda)) {
                     pi0.boot[i] <- mean(p.boot>lambda[i])/(1-lambda[i])
                 }
@@ -116,7 +131,26 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
     }
 #The estimated q-values calculated here
     u <- order(p)
-    v <- rank(p)
+
+    # change by Alan
+    # ranking function which returns number of observations less than or equal
+    qvalue.rank <- function(x) {
+      idx <- sort.list(x)
+
+      fc <- factor(x)
+      nl <- length(levels(fc))
+      bin <- as.integer(fc)
+      tbl <- tabulate(bin)
+      cs <- cumsum(tbl)
+ 
+      tbl <- rep(cs, tbl)
+      tbl[idx] <- tbl
+
+      return(tbl)
+    }
+
+    v <- qvalue.rank(p)
+    
     qvalue <- pi0*m*p/v
     if(robust) {
         qvalue <- pi0*m*p/(v*(1-(1-p)^m))
@@ -137,11 +171,14 @@ qvalue <- function(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=
     return(retval)
 }
 
-qplot <- function(qobj, rng=c(0.0, 0.1), ...) { ## change by Alan:  'rng' a vector instead of an upper bound alone
+qplot <- function(qobj, rng=c(0.0, 0.1), smooth.df = 3, smooth.log.pi0 = FALSE, ...) { ## change by Alan:  
+##  'rng' a vector instead of an upper bound alone
 #Input
 #=============================================================================
 #qobj: a q-value object returned by the qvalue function
 #rng: the range of q-values to be plotted (optional)
+#smooth.df: degrees of freedom to use in smoother (optional)
+#smooth.log.pi0: should smoothing be done on log scale? (optional)
 #
 #Output
 #=============================================================================
@@ -156,12 +193,21 @@ if(min(q2) > rng[2]) {rng <- c(min(q2), quantile(q2, 0.1))} ## change by Alan:  
 p2 <- qobj$pval[order(qobj$pval)]
 par(mfrow=c(2,2))
 lambda <- qobj$lambda
-if(length(lambda)==1) {lambda <- seq(0,max(0.95,lambda),0.05)}
+if(length(lambda)==1) {lambda <- seq(0,max(0.90,lambda),0.05)}
 pi0 <- rep(0,length(lambda))
 for(i in 1:length(lambda)) {
     pi0[i] <- mean(p2>lambda[i])/(1-lambda[i])
     }
-spi0 <- smooth.spline(lambda,pi0,df=3)
+    
+if(smooth.log.pi0)
+  pi0 <- log(pi0)
+spi0 <- smooth.spline(lambda,pi0,df=smooth.df)
+
+if(smooth.log.pi0) {
+  pi0 <- exp(pi0)
+  spi0$y <- exp(spi0$y)
+}
+
 pi00 <- round(qobj$pi0,3)
 plot(lambda,pi0,xlab=expression(lambda),ylab=expression(hat(pi)[0](lambda)),pch=".")
 mtext(substitute(hat(pi)[0] == that, list(that= pi00)))
@@ -192,21 +238,21 @@ qwrite <- function(qobj, filename="my-qvalue-results.txt") {
 #Second row: FDR significance level (if specified) ## change by Alan
 #Third row and below: the p-values (1st column), the estimated q-values (2nd column),
 #  and indicator of significance level if appropriate (3rd column)
-  cat(c("pi0:", qobj$pi0, "\n\n"), file=filename, append=F)
+  cat(c("pi0:", qobj$pi0, "\n\n"), file=filename, append=FALSE)
   if(any(names(qobj) == "fdr.level")) {
-    cat(c("FDR level:", qobj$fdr.level, "\n\n"), file=filename, append=T)
-    cat(c("p-value q-value significant", "\n"), file=filename, append=T) ## change by Alan (space-delimited now)
+    cat(c("FDR level:", qobj$fdr.level, "\n\n"), file=filename, append=TRUE)
+    cat(c("p-value q-value significant", "\n"), file=filename, append=TRUE) ## change by Alan (space-delimited now)
 #    for(i in 1:length(qobj$qval)) {
-#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\t", qobj$significant[i], "\n"), file=filename, append=T)
+#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\t", qobj$significant[i], "\n"), file=filename, append=TRUE)
 #    }
-    write(t(cbind(qobj$pval, qobj$qval, qobj$significant)), file=filename, ncolumns=3, append=T) ## change by Alan
+    write(t(cbind(qobj$pval, qobj$qval, qobj$significant)), file=filename, ncolumns=3, append=TRUE) ## change by Alan
   }
   else {
-    cat(c("p-value q-value", "\n"), file=filename, append=T)
+    cat(c("p-value q-value", "\n"), file=filename, append=TRUE)
 #    for(i in 1:length(qobj$qval)) {
-#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\n"), file=filename, append=T)
+#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\n"), file=filename, append=TRUE)
 #    }
-    write(t(cbind(qobj$pval, qobj$qval)), file=filename, ncolumns=2, append=T)
+    write(t(cbind(qobj$pval, qobj$qval)), file=filename, ncolumns=2, append=TRUE)
   }
 }
 
@@ -234,19 +280,24 @@ summary.qvalue <- function(object, ...) {
 
 qvalue.gui <- function(dummy = NULL) {
 
+  if(interactive()) {
+
   require(tcltk) || stop("TCLTK support is absent.")
 
   out <- NULL
   inFileName.var <- tclVar("")
   pp <- NULL
   from.var.1 = tclVar("0.0")
-  to.var.1 = tclVar("0.95")
+  to.var.1 = tclVar("0.90")
   by.var.1 = tclVar("0.05")
   from.var.2 = tclVar("0.0")
   to.var.2 = tclVar("0.1")
   single.var = tclVar("")
   lambda.var = tclVar(1)
   pi0.var = tclVar(1)
+  df.var = tclVar("3")
+  log.no.var = tclVar(1)
+   
   robust.var = tclVar(0)
   levelSpec.var = tclVar(0)
   level.var = tclVar("0.05")
@@ -273,8 +324,8 @@ qvalue.gui <- function(dummy = NULL) {
     else {
       postMsg("Reading p-values...")
       pvals = scan(flnm)
-      if(is.null(pvals) == F) {
-        assign("pp", pvals, inherits = T)
+      if(is.null(pvals) == FALSE) {
+        assign("pp", pvals, inherits = TRUE)
         postMsg("done.\n")
       }
     }
@@ -295,6 +346,68 @@ qvalue.gui <- function(dummy = NULL) {
     }
   }
 
+  smoother.fnc <- function() {
+    if(tclvalue(pi0.var) == 1)
+      tkconfigure(smoothOptions.btn, state = "normal")
+    else
+      tkconfigure(smoothOptions.btn, state = "disabled")
+  }
+  
+  smoothOptions.fnc <- function() {
+    base <- tktoplevel()
+    tkwm.title(base, "Smoother")
+
+    df.var.0 <- tclvalue(df.var)
+    log.no.var.0 <- tclvalue(log.no.var)
+
+    smooth.ok.fnc <- function() {
+      tkdestroy(base)
+    }
+    
+    smooth.cancel.fnc <- function() {
+      tclvalue(df.var) <- df.var.0
+      tclvalue(log.no.var) <- log.no.var.0
+      
+      tkdestroy(base)
+    }
+    
+    top.frm <- tkframe(base, borderwidth = 2)
+    inset.frm <- tkframe(top.frm, relief = "raised", bd = 2)
+    
+    df.frm <- tkframe(inset.frm)
+    df.lbl <- tklabel(df.frm, text = "Degrees of freedom:", font = normalFont)
+    df.ety <- tkentry(df.frm, textvariable = df.var, font = normalFont, width = 3, justify = "center")
+    tkpack(df.lbl, side = "left")
+    tkpack(df.ety, side = "left")
+    
+    log.lbl.frm <- tkframe(inset.frm)
+    log.lbl <- tklabel(log.lbl.frm, text = "Variable to smooth:", font = normalFont)
+    tkpack(log.lbl, side = "left")
+
+    log.no.frm <- tkframe(inset.frm)
+    log.no.cbtn <- tkradiobutton(log.no.frm, text = "pi0", font = normalFont, 
+      variable = log.no.var, value = 1)
+    tkpack(log.no.cbtn, side = "left")
+
+    log.yes.frm <- tkframe(inset.frm)
+    log.yes.cbtn <- tkradiobutton(log.yes.frm, text = "log pi0", font = normalFont, 
+      variable = log.no.var, value = 0)
+    tkpack(log.yes.cbtn, side = "left")
+    
+    btn.frm <- tkframe(inset.frm)
+    ok.btn <- tkbutton(btn.frm, text = "OK", font = normalFont, command = smooth.ok.fnc)
+    cancel.btn <- tkbutton(btn.frm, text = "Cancel", font = normalFont, command = smooth.cancel.fnc)
+    tkgrid(ok.btn, cancel.btn)
+    
+    tkpack(df.frm, padx = 5, anchor = "w", fill = "x", expand = TRUE)
+    tkpack(log.lbl.frm, padx = 5, anchor = "w", fill = "x", expand = TRUE)
+    tkpack(log.no.frm, padx = 10, anchor = "w", fill = "x", expand = TRUE)
+    tkpack(log.yes.frm, padx = 10, anchor = "w", fill = "x", expand = TRUE)
+    tkpack(btn.frm, anchor = "e")
+    tkpack(inset.frm)
+    tkpack(top.frm)
+  }
+
   level.fnc <- function() {
     if(tclvalue(levelSpec.var) == 1)
       tkconfigure(level.ety, state = "normal")
@@ -310,7 +423,7 @@ qvalue.gui <- function(dummy = NULL) {
       postMsg("Computing q-values...")
       if(tclvalue(lambda.var) == 1)
         lambda <- seq(from = as.numeric(tclvalue(from.var.1)), to = as.numeric(tclvalue(to.var.1)),
-        by = as.numeric(tclvalue(by.var.1)))
+          by = as.numeric(tclvalue(by.var.1)))
       else {
         lambda <- as.numeric(tclvalue(single.var))
         if(is.na(lambda)) {
@@ -344,12 +457,16 @@ qvalue.gui <- function(dummy = NULL) {
         robust <- TRUE
       else
         robust <- FALSE
+      if(tclvalue(log.no.var) == 1)
+        smooth.log.pi0 = TRUE
+      else
+        smooth.log.pi0 = FALSE
 
       qout = qvalue(p = pp, lambda = lambda, pi0.method = pi0.method, fdr.level = fdr.level,
-        robust = robust, gui = T)
-      if (inherits(quot, "qvalue")) {
+        robust = robust, gui = TRUE, smooth.df = as.numeric(tclvalue(df.var)), smooth.log.pi0 = smooth.log.pi0)
+      if(class(qout) == "qvalue") {
         tclvalue(to.var.2) = as.character(round(qout$pi0, 4))
-        assign("out", qout, inherits = T)
+        assign("out", qout, inherits = TRUE)
         postMsg(paste("done: pi_0 = ", round(qout$pi0, 4), ".\n", sep = ""))
       }
     }
@@ -391,17 +508,23 @@ qvalue.gui <- function(dummy = NULL) {
     else if(tclvalue(plotChoice.var) == 2) {
       if(is.null(out))
         postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(inherits(out, "qvalue")) {
+      else if(class(out) == "qvalue") {
         par(mfrow = c(1, 1))
         hist(out$qvalues, main = "Histogram of Q-Values", xlab = "")
       }
     }
 
     else {
+      if(tclvalue(log.no.var) == 1)
+        smooth.log.pi0 = TRUE
+      else
+        smooth.log.pi0 = FALSE
+    
       if(is.null(out))
-        postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(inherits(out, "qvalue"))
-        qplot(out, rng = c(tclvalue(from.var.2), tclvalue(to.var.2)))
+        postMsg("ERROR: Q-values haven't been computed yet.\n")        
+      else if(class(out) == "qvalue")
+        qplot(out, rng = as.numeric(c(tclvalue(from.var.2), tclvalue(to.var.2))), 
+            smooth.df = as.numeric(tclvalue(df.var)), smooth.log.pi0 = smooth.log.pi0)
     }
   }
 
@@ -409,7 +532,7 @@ qvalue.gui <- function(dummy = NULL) {
     if(is.null(out))
       postMsg("ERROR: Q-values haven't been computed yet.\n")
 
-    else if(inherits(out, "qvalue")) {
+    else if(class(out) == "qvalue") {
       postMsg("Writing results to file...")
       flnm <- tclvalue(tkgetSaveFile())
       if(flnm != "") {
@@ -442,7 +565,7 @@ qvalue.gui <- function(dummy = NULL) {
     else if(tclvalue(plotChoice.var) == 2) {
       if(is.null(out))
         postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(inherits(out, "qvalue")) {
+      else if(class(out) == "qvalue") {
         flnm <- tclvalue(tkgetSaveFile(defaultextension = "pdf"))
         if(flnm != "") {
           pdf(flnm)
@@ -459,11 +582,11 @@ qvalue.gui <- function(dummy = NULL) {
     else {
       if(is.null(out))
         postMsg("ERROR: Q-values haven't been computed yet.\n")
-      else if(inherits(out, "qvalue")) {
+      else if(class(out) == "qvalue") {
         flnm <- tclvalue(tkgetSaveFile(defaultextension = "pdf"))
         if(flnm != "") {
           pdf(flnm)
-          qplot(out, rng = c(tclvalue(from.var.2), tclvalue(to.var.2)))
+          qplot(out, rng = as.numeric(c(tclvalue(from.var.2), tclvalue(to.var.2))))
           dev.off()
           postMsg("Plot saved.\n")
         }
@@ -484,7 +607,7 @@ qvalue.gui <- function(dummy = NULL) {
   }
 
   ## Reroute R errors to the message box
-  options(error = errorHandler, show.error.messages = F)
+  options(error = errorHandler, show.error.messages = FALSE)
 
   ##############
   ## GUI code ##
@@ -492,7 +615,7 @@ qvalue.gui <- function(dummy = NULL) {
 
   ## Top level
   base <- tktoplevel()
-  tkwm.title(base, "QValue")
+  tkwm.title(base, "QVALUE")
 
   top.frm <- tkframe(base, borderwidth = 2)
 
@@ -503,7 +626,8 @@ qvalue.gui <- function(dummy = NULL) {
 
   inFileName.frm <- tkframe(pValueInset.frm)
   inFileName.lbl <- tklabel(inFileName.frm, text = "File Name:", font = normalFont)
-  inFileName.ety <- tkentry(inFileName.frm, textvariable = inFileName.var, font = normalFont)
+  inFileName.ety <- tkentry(inFileName.frm, textvariable = inFileName.var, font = normalFont, 
+    justify = "center")
   tkpack(inFileName.lbl, side = "left")
   tkpack(inFileName.ety, side = "right", fill = "x", expand = TRUE)
   tkpack(inFileName.frm, fill = "x", expand = TRUE)
@@ -531,9 +655,12 @@ qvalue.gui <- function(dummy = NULL) {
   from.lbl.1 <- tklabel(lambdaRange.frm, text = "from:", font = normalFont)
   to.lbl.1 <- tklabel(lambdaRange.frm, text = "to:", font = normalFont)
   by.lbl.1 <- tklabel(lambdaRange.frm, text = "by:", font = normalFont)
-  from.ety.1 <- tkentry(lambdaRange.frm, textvariable = from.var.1, font = normalFont, width = 5)
-  to.ety.1 <- tkentry(lambdaRange.frm, textvariable = to.var.1, font = normalFont, width = 5)
-  by.ety.1 <- tkentry(lambdaRange.frm, textvariable = by.var.1, font = normalFont, width = 5)
+  from.ety.1 <- tkentry(lambdaRange.frm, textvariable = from.var.1, font = normalFont, width = 5, 
+    justify = "center")
+  to.ety.1 <- tkentry(lambdaRange.frm, textvariable = to.var.1, font = normalFont, width = 5, 
+    justify = "center")
+  by.ety.1 <- tkentry(lambdaRange.frm, textvariable = by.var.1, font = normalFont, width = 5, 
+    justify = "center")
   tkpack(range.rbtn, side = "left", anchor = "w")
   tkpack(from.lbl.1, side = "left")
   tkpack(from.ety.1, side = "left")
@@ -547,24 +674,30 @@ qvalue.gui <- function(dummy = NULL) {
   single.rbtn <- tkradiobutton(lambdaSingle.frm, text = "Single No.:", font = normalFont, value = 0,
     variable = lambda.var, command = lambda.fnc)
   single.ety <- tkentry(lambdaSingle.frm, textvariable = single.var, font = normalFont, width = 5,
-    state = "disabled")
+    state = "disabled", justify = "center")
   tkpack(single.rbtn, side = "left", anchor = "w")
   tkpack(single.ety, side = "left")
   tkpack(lambdaSingle.frm, fill = "x", expand = TRUE)
 
   #### Specify bootstrap or smoother method
-  methodLable.frm <- tkframe(optionsInset.frm)
-  tkpack(tklabel(methodLable.frm, text = "Choose pi_0 method:", font = normalFont), anchor = "w")
-  tkpack(methodLable.frm, fill = "x", expand = TRUE)
+  methodLabel.frm <- tkframe(optionsInset.frm)
+  tkpack(tklabel(methodLabel.frm, text = "Choose pi_0 method:", font = normalFont), anchor = "w")
+  tkpack(methodLabel.frm, fill = "x", expand = TRUE)
 
-  methodChoice.frm <- tkframe(optionsInset.frm, padx = 10)
-  smoother.rbtn <- tkradiobutton(methodChoice.frm, text = "Smoother", font = normalFont, value = 1,
-    variable = pi0.var)
-  bootstrap.rbtn <- tkradiobutton(methodChoice.frm, text = "Bootstrap", font = normalFont, value = 0,
-    variable = pi0.var)
+  methodSmooth.frm <- tkframe(optionsInset.frm, padx = 10)
+  smoother.rbtn <- tkradiobutton(methodSmooth.frm, text = "Smoother", font = normalFont, value = 1, 
+    variable = pi0.var, command = smoother.fnc)
+  smoothOptions.btn <- tkbutton(methodSmooth.frm, text = "Advanced Options", font = normalFont, 
+    command = smoothOptions.fnc)
   tkpack(smoother.rbtn, side = "left", anchor = "w")
+  tkpack(smoothOptions.btn, side = "left")
+  tkpack(methodSmooth.frm, fill = "x", expand = TRUE)
+  
+  methodBstrap.frm <- tkframe(optionsInset.frm, padx = 10)
+  bootstrap.rbtn <- tkradiobutton(methodBstrap.frm, text = "Bootstrap", font = normalFont, value = 0, 
+    variable = pi0.var, command = smoother.fnc)
   tkpack(bootstrap.rbtn, side = "left", anchor = "w")
-  tkpack(methodChoice.frm, fill = "x", expand = TRUE)
+  tkpack(methodBstrap.frm, fill = "x", expand = TRUE)
 
   #### Specify robust method
   robust.frm <- tkframe(optionsInset.frm)
@@ -578,7 +711,7 @@ qvalue.gui <- function(dummy = NULL) {
   level.cbtn <- tkcheckbutton(level.frm, text = "Specify FDR level:", font = normalFont,
     variable = levelSpec.var, command = level.fnc)
   level.ety <- tkentry(level.frm, textvariable = level.var, font = normalFont, width = 5,
-    state = "disabled")
+    state = "disabled", justify = "center")
   tkpack(level.cbtn, side = "left", anchor = "w")
   tkpack(level.ety, side = "left")
   tkpack(level.frm, fill = "x", expand = TRUE)
@@ -620,9 +753,9 @@ qvalue.gui <- function(dummy = NULL) {
   from.lbl.2 <- tklabel(qPlots.frm, text = "range from:", font = normalFont)
   to.lbl.2 <- tklabel(qPlots.frm, text = "to:", font = normalFont)
   from.ety.2 <- tkentry(qPlots.frm, textvariable = from.var.2, font = normalFont, width = 7,
-    state = "disabled")
+    state = "disabled", justify = "center")
   to.ety.2 <- tkentry(qPlots.frm, textvariable = to.var.2, font = normalFont, width = 7,
-    state = "disabled")
+    state = "disabled", justify = "center")
   tkpack(qPlots.rbtn, side = "left", anchor = "w")
   tkpack(from.lbl.2, side = "left")
   tkpack(from.ety.2, side = "left")
@@ -652,6 +785,8 @@ qvalue.gui <- function(dummy = NULL) {
   tkpack(top.frm)
 
   tkwm.focusmodel(base, "active")
+
+  }
 
 }
 

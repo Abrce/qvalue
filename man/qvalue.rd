@@ -7,7 +7,8 @@
   false discovery rate) when that particular test is called significant.
 }
 \usage{
-qvalue(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=NULL, robust=F, gui=F)
+qvalue(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE, gui=FALSE, 
+  smooth.df=3, smooth.log.pi0=FALSE)
 }
 \arguments{
   \item{p}{A vector of p-values (only necessary input)}
@@ -24,6 +25,11 @@ qvalue(p, lambda=seq(0,0.95,0.05), pi0.method="smoother", fdr.level=NULL, robust
     estimate of pFDR. Optional.}
   \item{gui}{A flag to indicate to 'qvalue' that it should communicate with 
     the gui.  Should not be specified on command line. Optional.}
+  \item{smooth.df}{Number of degrees-of-freedom to use when estimating \eqn{\pi_0}{pi_0} 
+    with a smoother. Optional.}
+  \item{smooth.log.pi0}{If TRUE and \texttt{pi0.method} = "smoother", \eqn{\pi_0}{pi_0} will be 
+    estimated by applying a smoother to a scatterplot of \textit{log} \eqn{\pi_0}{pi_0} estimates 
+    against the tuning parameter \eqn{\lambda}{lambda}. Optional.}
 }
 \details{
   If no options are selected, then the method used to estimate \eqn{\pi_0}{pi_0} is
