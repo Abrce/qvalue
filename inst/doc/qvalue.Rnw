@@ -1,4 +1,3 @@
-% \VignetteDepends{modreg}
 % \VignetteIndexEntry{qvalue Tutorial}
 % \VignetteKeywords{Significance Analysis}
 % \VignettePackage{qvalue}
