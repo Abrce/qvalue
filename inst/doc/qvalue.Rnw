@@ -75,7 +75,7 @@ a histogram.\\
 
 <<input>>=
 library("qvalue")
-data("hedenfalk", package="qvalue")
+data(hedenfalk)
 length(hedenfalk)
 @
 
