@@ -19,4 +19,5 @@ Maintainer: John D. Storey <jstorey@u.washington.edu>
 Depends: R (>= 1.7.0)
 License: LGPL
 Packaged: Sat Oct 9 11:23:03 2004; jstorey
+biocViews: MultipleComparisons
 
