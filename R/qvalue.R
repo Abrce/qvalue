@@ -282,7 +282,7 @@ qvalue.gui <- function(dummy = NULL) {
 
   if(interactive()) {
 
-  require(tcltk) || stop("TCLTK support is absent.")
+  require("tcltk") || stop("TCLTK support is absent.")
 
   out <- NULL
   inFileName.var <- tclVar("")
