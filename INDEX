@@ -1,9 +1,0 @@
-hedenfalk               Gene expression dataset from Hedenfalk et al.
-                        (2001)
-qplot                   Graphical display of qvalue objects
-qsummary                Display qvalue object
-qvalue                  Estimate the q-values for a given set of
-                        p-values
-qvalue.gui              A graphical user interface for QValue
-qwrite                  Write the results of the q-value object qobj
-                        to a file
