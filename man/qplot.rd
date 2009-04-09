@@ -14,8 +14,8 @@ qplot(qobj, rng = c(0, 0.1), smooth.df = 3, smooth.log.pi0 = FALSE, \ldots)
   \item{rng}{Range of q-values to consider. Optional.}
   \item{smooth.df}{Number of degrees-of-freedom to use when estimating \eqn{\pi_0}{pi_0} 
     with a smoother. Optional.}
-  \item{smooth.log.pi0}{If TRUE and \texttt{pi0.method} = "smoother", \eqn{\pi_0}{pi_0} will be 
-    estimated by applying a smoother to a scatterplot of \textit{log} \eqn{\pi_0}{pi_0} estimates 
+  \item{smooth.log.pi0}{If TRUE and \code{pi0.method} = "smoother", \eqn{\pi_0}{pi_0} will be 
+    estimated by applying a smoother to a scatterplot of \eqn{log} \eqn{\pi_0}{pi_0} estimates 
     against the tuning parameter \eqn{\lambda}{lambda}. Optional.}
   \item{\ldots}{Any other arguments.}
 }
