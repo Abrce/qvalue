@@ -83,7 +83,6 @@ qvalue <- function(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.l
         }
 
         if(pi0.method=="smoother") {
-            #library(stats) ## change by Alan: loaded automatically now
             if(smooth.log.pi0)
               pi0 <- log(pi0)
 
@@ -187,7 +186,6 @@ qplot <- function(qobj, rng=c(0.0, 0.1), smooth.df = 3, smooth.log.pi0 = FALSE, 
 #Upper-right: q-values versus p-values
 #Lower-left: number of significant tests per each q-value cut-off
 #Lower-right: number of expected false positives versus number of significant tests
-##library(stats) ## change by Alan:  'stats' automatically loaded
 q2 <- qobj$qval[order(qobj$pval)]
 if(min(q2) > rng[2]) {rng <- c(min(q2), quantile(q2, 0.1))} ## change by Alan:  replace 'rng' with vector
 p2 <- qobj$pval[order(qobj$pval)]
@@ -281,8 +279,6 @@ summary.qvalue <- function(object, ...) {
 qvalue.gui <- function(dummy = NULL) {
 
   if(interactive()) {
-
-  require("tcltk") || stop("TCLTK support is absent.")
 
   out <- NULL
   inFileName.var <- tclVar("")
@@ -788,8 +784,4 @@ qvalue.gui <- function(dummy = NULL) {
 
   }
 
-}
-
-.First.lib <- function (libname, pkgname, where) {
-  library(stats)
 }
