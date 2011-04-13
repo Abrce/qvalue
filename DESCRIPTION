@@ -1,6 +1,6 @@
 Package: qvalue
 Title: Q-value estimation for false discovery rate control
-Version: 1.25.0
+Version: 1.26.0
 Author: Alan Dabney <adabney@u.washington.edu> and John D. Storey
         <jstorey@u.washington.edu>, with assistance from Gregory R.
         Warnes <gregory_r_warnes@groton.pfizer.com>
