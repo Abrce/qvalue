@@ -278,7 +278,39 @@ summary.qvalue <- function(object, ...) {
 
 qvalue.gui <- function(dummy = NULL) {
 
-  if(interactive()) {
+  if (!interactive())
+      return()
+
+  tryCatch({
+      require(tcltk)
+  }, error=function(err) {
+      stop("failed to load 'tcltk' library: ", conditionMessage(err))
+  })
+
+  ## explicit resolution of tcltk symbols
+  tclvalue <- tcltk::tclvalue
+  "tclvalue<-" <- tcltk::"tclvalue<-"
+  tclVar <- tcltk::tclVar
+  tkbutton <- tcltk::tkbutton
+  tkcheckbutton <- tcltk::tkcheckbutton
+  tkconfigure <- tcltk::tkconfigure
+  tkdestroy <- tcltk::tkdestroy
+  tkentry <- tcltk::tkentry
+  tkframe <- tcltk::tkframe
+  tkgetOpenFile <- tcltk::tkgetOpenFile
+  tkgetSaveFile <- tcltk::tkgetSaveFile
+  tkgrid <- tcltk::tkgrid
+  tkinsert <- tcltk::tkinsert
+  tklabel <- tcltk::tklabel
+  tkpack <- tcltk::tkpack
+  tkradiobutton <- tcltk::tkradiobutton
+  tkscrollbar <- tcltk::tkscrollbar
+  tkset <- tcltk::tkset
+  tktext <- tcltk::tktext
+  tktoplevel <- tcltk::tktoplevel
+  tkwm.focusmodel <- tcltk::tkwm.focusmodel
+  tkwm.title <- tcltk::tkwm.title
+  tkyview <- tcltk::tkyview
 
   out <- NULL
   inFileName.var <- tclVar("")
@@ -781,7 +813,5 @@ qvalue.gui <- function(dummy = NULL) {
   tkpack(top.frm)
 
   tkwm.focusmodel(base, "active")
-
-  }
 
 }
