@@ -7,7 +7,7 @@
   false discovery rate) when that particular test is called significant.
 }
 \usage{
-qvalue(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE, gui=FALSE, 
+qvalue(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE,
   smooth.df=3, smooth.log.pi0=FALSE)
 }
 \arguments{
@@ -23,8 +23,6 @@ qvalue(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, r
   \item{robust}{An indicator of whether it is desired to make the
     estimate more robust for small p-values and a direct finite sample 
     estimate of pFDR. Optional.}
-  \item{gui}{A flag to indicate to 'qvalue' that it should communicate with 
-    the gui.  Should not be specified on command line. Optional.}
   \item{smooth.df}{Number of degrees-of-freedom to use when estimating \eqn{\pi_0}{pi_0} 
     with a smoother. Optional.}
   \item{smooth.log.pi0}{If TRUE and \code{pi0.method} = "smoother", \eqn{\pi_0}{pi_0} will be 
@@ -62,11 +60,9 @@ qvalue(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, r
   conservative point estimation, and simultaneous conservative
   consistency of false discovery rates: A unified approach. Journal of
   the Royal Statistical Society, Series B, 66: 187-205.
-  
-  QVALUE Manual \url{http://faculty.washington.edu/~jstorey/qvalue/manual.pdf}
 }
-\author{John D. Storey \email{jstorey@u.washington.edu}}
-\seealso{\code{\link{qplot}}, \code{\link{qwrite}}, \code{\link{qsummary}}, \code{\link{qvalue.gui}}}
+\author{John D. Storey \email{jstorey@princeton.edu}}
+\seealso{\code{\link{qplot}}, \code{\link{qwrite}}, \code{\link{qsummary}}}
 \examples{
 \dontrun{
 p <- scan("pvalues.txt")

@@ -14,7 +14,7 @@ Description: This package takes a list of p-values resulting from the
         applied to problems in genomics, brain imaging, astrophysics,
         and data mining.
 Maintainer: John D. Storey <jstorey@princeton.edu>
-Imports: graphics, grDevices, stats
-Suggests: tcltk
+Imports: graphics, stats
 License: LGPL
 biocViews: MultipleComparison
+Packaged: 2015-03-03 23:27:31 UTC; root

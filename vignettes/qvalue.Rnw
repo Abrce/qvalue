@@ -51,7 +51,7 @@ of the false positive rate, the q-value assigns significance in terms of the fal
 This document provides a tutorial for using the \texttt{qvalue} package.  The package consists of four 
 functions (\Rfunction{qvalue} for computing q-values from p-values, \Rfunction{qplot} for visualizing the 
 results with graphs, \Rfunction{qsummary} for visualizing the results with a table, and \Rfunction{qwrite} for 
-writing the output to file) and a GUI (\Rfunction{qvalue.gui}).  As with any R package, detailed information 
+writing the output to file).  As with any R package, detailed information 
 on functions, their arguments and value, can be obtained in the help files. For instance, to view the help 
 file for the function \Rfunction{qvalue} within R, type \texttt{? qvalue}. \\
 
@@ -66,7 +66,7 @@ gene, and p-values were assigned by a permutation-based simulation of the null d
 data and code for preprocessing can be found at 
 
 \begin{center}
-\texttt{http://faculty.washington.edu/$\sim$jstorey/qvalue/results.html}.
+\texttt{http://genomine.org/qvalue/results.html}.
 \end{center}
 
 The p-values from the BRCA1/BRCA2 analysis are included with the \Rpackage{qvalue} package as the dataset 
@@ -132,11 +132,9 @@ with the \Rfunarg{filename} argument to \Rfunction{qwrite}.
 qwrite(qobj)
 @
 
-\section{The \Rfunction{qvalue.gui} GUI}
+\section{The qvalue Shiny app}
 
-The \Rfunction{qvalue.gui} function launches a GUI with which you can conduct all the tasks described above.  
-The GUI is described in full detail in the accompanying manual.  It is launched by typing 
-\texttt{qvalue.gui()}.
+A point-and-click version of qvalue can be accessed at \texttt{http://qvalue.princeton.edu/}.
 
 \bibliography{qvalue} 
 

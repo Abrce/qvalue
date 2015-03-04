@@ -61,11 +61,9 @@ qplot(qobj, rng = c(0, 0.1), smooth.df = 3, smooth.log.pi0 = FALSE, \ldots)
   conservative point estimation, and simultaneous conservative
   consistency of false discovery rates: A unified approach. Journal of
   the Royal Statistical Society, Series B, 66: 187-205.
-  
-  QVALUE Manual \url{http://faculty.washington.edu/~jstorey/qvalue/manual.pdf}
 }
-\author{John D. Storey \email{jstorey@u.washington.edu}}
-\seealso{\code{\link{qvalue}}, \code{\link{qwrite}}, \code{\link{qsummary}}, \code{\link{qvalue.gui}}}
+\author{John D. Storey \email{jstorey@princeton.edu}}
+\seealso{\code{\link{qvalue}}, \code{\link{qwrite}}, \code{\link{qsummary}}}
 \examples{
 \dontrun{
 p <- scan(pvalues.txt) 
