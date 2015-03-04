@@ -25,9 +25,9 @@ qsummary(qobj, cuts = c(1e-04, 0.001, 0.01, 0.025, 0.05, 0.1, 1),
 \value{
   Invisibly returns the original object.
 }
-\author{Alan Dabney \email{adabney@u.washington.edu} and Gregory R. Warnes \email{gregory\_r\_warnes@groton.pfizer.com}}
+\author{Alan Dabney}
 \seealso{\code{\link{qvalue}}, \code{\link{qplot}},
-  \code{\link{qwrite}}, \code{\link{qvalue.gui}}}
+  \code{\link{qwrite}}}
 \examples{
 \dontrun{
 qobj <- qvalue(p)

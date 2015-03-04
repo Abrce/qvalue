@@ -22,8 +22,8 @@ qwrite(qobj, filename = "my-qvalue-results.txt")
 \value{
   Nothing of interest.
 }
-\author{Alan Dabney \email{adabney@u.washington.edu} and John D. Storey \email{jstorey@u.washington.edu}}
-\seealso{\code{\link{qvalue}}, \code{\link{qplot}}, \code{\link{qsummary}}, \code{\link{qvalue.gui}}}
+\author{Alan Dabney and John D. Storey \email{jstorey@princeton.edu}}
+\seealso{\code{\link{qvalue}}, \code{\link{qplot}}, \code{\link{qsummary}}}
 \examples{
 \dontrun{
 p <- scan("pvalues.txt")
