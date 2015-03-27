@@ -1,252 +1,124 @@
-qvalue <- function(p=NULL, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=NULL, robust=FALSE, 
-  smooth.df = 3, smooth.log.pi0 = FALSE) {
-#Input
-#=============================================================================
-#p: a vector of p-values (only necessary input)
-#fdr.level: a level at which to control the FDR (optional)
-#lambda: the value of the tuning parameter to estimate pi0 (optional)
-#pi0.method: either "smoother" or "bootstrap"; the method for automatically
-#           choosing tuning parameter in the estimation of pi0, the proportion
-#           of true null hypotheses
-#robust: an indicator of whether it is desired to make the estimate more robust
-#        for small p-values and a direct finite sample estimate of pFDR (optional)
-#gui: A flag to indicate to 'qvalue' that it should communicate with the gui.  ## change by Alan
-#     Should not be specified on command line.
-#smooth.df: degrees of freedom to use in smoother (optional)
-#smooth.log.pi0: should smoothing be done on log scale? (optional)
-#
-#Output
-#=============================================================================
-#call: gives the function call
-#pi0: an estimate of the proportion of null p-values
-#qvalues: a vector of the estimated q-values (the main quantity of interest)
-#pvalues: a vector of the original p-values
-#significant: if fdr.level is specified, an indicator of whether the q-value
-#    fell below fdr.level (taking all such q-values to be significant controls
-#    FDR at level fdr.level)
+#' @title 
+#' Estimate the q-values for a given set of p-values
+#' 
+#' @description 
+#' Estimate the q-values for a given set of p-values.  The q-value of a
+#' test measures the proportion of false positives incurred (called the
+#' false discovery rate) when that particular test is called significant.
+#'  
+#' @details
+#' The function \code{\link{pi0est}} is called internally and calculates the estimate of \eqn{\pi_0}{pi_0},
+#' the proportion of true null hypotheses. The function \code{\link{lfdr}} is also called internally and 
+#' calculates the estimated local FDR values.  Arguments for these functions can be included via \code{...} and 
+#' will be utilized in the internal calls made in \code{\link{qvalue}}. See \url{http://genomine.org/papers/Storey_FDR_2011.pdf}
+#' for a brief introduction to FDRs and q-values.
+#'
+#' @param p A vector of p-values (only necessary input).
+#' @param fdr.level A level at which to control the FDR. Must be in (0,1]. Optional; if this is 
+#' selected, a vector of TRUE and FALSE is returned that specifies
+#' whether each q-value is less than fdr.level or not.
+#' @param pfdr An indicator of whether it is desired to make the 
+#' estimate more robust for small p-values and a direct finite sample estimate of pFDR -- optional.
+#' @param \ldots Additional arguments passed to \code{\link{pi0est}} and \code{\link{lfdr}}.
+#' 
+#' @return  
+#' A list of object type "qvalue" containing:
+#' \item{call}{Function call.}
+#' \item{pi0}{An estimate of the proportion of null p-values.}
+#' \item{qvalues}{A vector of the estimated q-values (the main quantity of interest).} 
+#' \item{pvalues}{A vector of the original p-values.}
+#' \item{lfdr}{A vector of the estimated local FDR values.}
+#' \item{significant}{If fdr.level is specified, and indicator of whether the
+#'                   q-value fell below fdr.level (taking all such q-values to be significant
+#'                                                 controls FDR at level fdr.level).}
+#' \item{pi0.lambda}{An estimate of the proportion of null p-values at each \eqn{\lambda}{lambda} value (see vignette).}
+#' \item{lambda}{A vector of the \eqn{\lambda}{lambda} values utilized to obtain \code{pi0.lambda}.}
+#'
+#' @references
+#' Storey JD. (2002) A direct approach to false discovery rates. Journal
+#' of the Royal Statistical Society, Series B, 64: 479-498. \cr
+#' \url{http://onlinelibrary.wiley.com/doi/10.1111/1467-9868.00346/abstract}
 
-####  GUI no longer available in R
-####  Go to the Shiny app at 
-####  http://qvalue.princeton.edu
+#' Storey JD and Tibshirani R. (2003) Statistical significance for
+#' genome-wide experiments. Proceedings of the National Academy of Sciences, 
+#' 100: 9440-9445. \cr
+#' \url{http://www.pnas.org/content/100/16/9440.full}
+#' 
+#' Storey JD. (2003) The positive false discovery rate: A Bayesian
+#' interpretation and the q-value. Annals of Statistics, 31: 2013-2035. \cr
+#' \url{http://projecteuclid.org/DPubS/Repository/1.0/Disseminate?view=body&id=pdf_1&handle=euclid.aos/1074290335}
+#' 
+#' Storey JD, Taylor JE, and Siegmund D. (2004) Strong control,
+#' conservative point estimation, and simultaneous conservative
+#' consistency of false discovery rates: A unified approach. Journal of
+#' the Royal Statistical Society, Series B, 66: 187-205. \cr
+#' \url{http://onlinelibrary.wiley.com/doi/10.1111/j.1467-9868.2004.00439.x/abstract}
+#' 
+#' Storey JD. (2011) False discovery rates. In \emph{International Encyclopedia of Statistical Science}. \cr
+#' \url{http://genomine.org/papers/Storey_FDR_2011.pdf} \cr
+#' \url{http://www.springer.com/statistics/book/978-3-642-04897-5} 
+#'
+#' @examples
+#' # import data
+#' data(hedenfalk)
+#' p <- hedenfalk$p
+#' 
+#' # get q-value object
+#' qobj <- qvalue(p)
+#' plot(qobj)
+#' hist(qobj)
+#' 
+#' # options available
+#' qobj <- qvalue(p, lambda=0.5, pfdr=TRUE)
+#' qobj <- qvalue(p, fdr.level=0.05, pi0.method="bootstrap", adj=1.2)
+#' 
+#' @author John D. Storey
+#' @seealso \code{\link{pi0est}}, \code{\link{lfdr}}, \code{\link{summary.qvalue}}, 
+#' \code{\link{plot.qvalue}}, \code{\link{hist.qvalue}}, \code{\link{write.qvalue}}
+#' @keywords qvalue
+#' @aliases qvalue
+#' @import splines ggplot2 grid reshape2
+#' @export
+qvalue <- function(p = NULL, fdr.level = NULL, pfdr = FALSE, ...) {
+  # Argument checks
+  if (min(p) < 0 || max(p) > 1) {
+    stop("p-values not in valid range [0, 1].")
+  } else if (!is.null(fdr.level) && (fdr.level <= 0 || fdr.level > 1)) {
+    stop("'fdr.level' must be in (0, 1].")
+  } 
   
-#Set up communication with GUI, if appropriate
-#    
-#    print(sys.calls())
-#    print(sys.frames())
-
-#    if(gui) {
-#        idx <- (1:sys.nframe())[as.character(sys.calls()) == "qvalue.gui()"]
-#        gui.env <- sys.frames()[[idx]]
-#    }
-
-#This is just some pre-processing
-    if(min(p)<0 || max(p)>1) {
-        print("ERROR: p-values not in valid range.")
-      return(0)
-    }
-    if(length(lambda)>1 && length(lambda)<4) {
-        print("ERROR: If length of lambda greater than 1, you need at least 4 values.")
-      return(0)
-    }
-    if(length(lambda)>1 && (min(lambda) < 0 || max(lambda) >= 1)) { ## change by Alan:  check for valid range for lambda
-        print("ERROR: Lambda must be within [0, 1).")
-      return(0)
-    }
-    m <- length(p)
-#These next few functions are the various ways to estimate pi0
-    if(length(lambda)==1) {
-        if(lambda<0 || lambda>=1) { ## change by Alan:  check for valid range for lambda
-            print("ERROR: Lambda must be within [0, 1).")
-          return(0)
-        }
-
-        pi0 <- mean(p >= lambda)/(1-lambda)
-        pi0 <- min(pi0,1)
-    }
-    else {
-        pi0 <- rep(0,length(lambda))
-        for(i in 1:length(lambda)) {
-            pi0[i] <- mean(p >= lambda[i])/(1-lambda[i])
-        }
-
-        if(pi0.method=="smoother") {
-            if(smooth.log.pi0)
-              pi0 <- log(pi0)
-
-            spi0 <- smooth.spline(lambda,pi0,df=smooth.df)
-            pi0 <- predict(spi0,x=max(lambda))$y
-
-            if(smooth.log.pi0)
-              pi0 <- exp(pi0)
-            pi0 <- min(pi0,1)
-        }
-        else if(pi0.method=="bootstrap") {
-            minpi0 <- min(pi0)
-            mse <- rep(0,length(lambda))
-            pi0.boot <- rep(0,length(lambda))
-            for(i in 1:100) {
-                p.boot <- sample(p,size=m,replace=TRUE)
-                for(i in 1:length(lambda)) {
-                    pi0.boot[i] <- mean(p.boot>lambda[i])/(1-lambda[i])
-                }
-                mse <- mse + (pi0.boot-minpi0)^2
-            }
-            pi0 <- min(pi0[mse==min(mse)])
-            pi0 <- min(pi0,1)
-        }
-        else {  ## change by Alan: check for valid choice of 'pi0.method' (only necessary on command line)
-            print("ERROR: 'pi0.method' must be one of 'smoother' or 'bootstrap'.")
-            return(0)
-        }
-    }
-    if(pi0 <= 0) {
-        print("ERROR: The estimated pi0 <= 0. Check that you have valid p-values or use another lambda method.")
-      return(0)
-    }
-    if(!is.null(fdr.level) && (fdr.level<=0 || fdr.level>1)) {  ## change by Alan:  check for valid fdr.level
-        print("ERROR: 'fdr.level' must be within (0, 1].")
-      return(0)
-    }
-#The estimated q-values calculated here
-    u <- order(p)
-
-    # change by Alan
-    # ranking function which returns number of observations less than or equal
-    qvalue.rank <- function(x) {
-      idx <- sort.list(x)
-
-      fc <- factor(x)
-      nl <- length(levels(fc))
-      bin <- as.integer(fc)
-      tbl <- tabulate(bin)
-      cs <- cumsum(tbl)
- 
-      tbl <- rep(cs, tbl)
-      tbl[idx] <- tbl
-
-      return(tbl)
-    }
-
-    v <- qvalue.rank(p)
-    
-    qvalue <- pi0*m*p/v
-    if(robust) {
-        qvalue <- pi0*m*p/(v*(1-(1-p)^m))
-    }
-    qvalue[u[m]] <- min(qvalue[u[m]],1)
-    for(i in (m-1):1) {
-    qvalue[u[i]] <- min(qvalue[u[i]],qvalue[u[i+1]],1)
-    }
-#The results are returned
-    if(!is.null(fdr.level)) {
-        retval <- list(call=match.call(), pi0=pi0, qvalues=qvalue, pvalues=p, fdr.level=fdr.level, ## change by Alan
-          significant=(qvalue <= fdr.level), lambda=lambda)
-    }
-    else {
-        retval <- list(call=match.call(), pi0=pi0, qvalues=qvalue, pvalues=p, lambda=lambda)
-    }
-    class(retval) <- "qvalue"
-    return(retval)
-}
-
-qplot <- function(qobj, rng=c(0.0, 0.1), smooth.df = 3, smooth.log.pi0 = FALSE, ...) { ## change by Alan:  
-##  'rng' a vector instead of an upper bound alone
-#Input
-#=============================================================================
-#qobj: a q-value object returned by the qvalue function
-#rng: the range of q-values to be plotted (optional)
-#smooth.df: degrees of freedom to use in smoother (optional)
-#smooth.log.pi0: should smoothing be done on log scale? (optional)
-#
-#Output
-#=============================================================================
-#Four plots:
-#Upper-left: pi0.hat(lambda) versus lambda with a smoother
-#Upper-right: q-values versus p-values
-#Lower-left: number of significant tests per each q-value cut-off
-#Lower-right: number of expected false positives versus number of significant tests
-q2 <- qobj$qval[order(qobj$pval)]
-if(min(q2) > rng[2]) {rng <- c(min(q2), quantile(q2, 0.1))} ## change by Alan:  replace 'rng' with vector
-p2 <- qobj$pval[order(qobj$pval)]
-par(mfrow=c(2,2))
-lambda <- qobj$lambda
-if(length(lambda)==1) {lambda <- seq(0,max(0.90,lambda),0.05)}
-pi0 <- rep(0,length(lambda))
-for(i in 1:length(lambda)) {
-    pi0[i] <- mean(p2>lambda[i])/(1-lambda[i])
-    }
-    
-if(smooth.log.pi0)
-  pi0 <- log(pi0)
-spi0 <- smooth.spline(lambda,pi0,df=smooth.df)
-
-if(smooth.log.pi0) {
-  pi0 <- exp(pi0)
-  spi0$y <- exp(spi0$y)
-}
-
-pi00 <- round(qobj$pi0,3)
-plot(lambda,pi0,xlab=expression(lambda),ylab=expression(hat(pi)[0](lambda)),pch=".")
-mtext(substitute(hat(pi)[0] == that, list(that= pi00)))
-lines(spi0)
-
-plot(p2[q2 >= rng[1] & q2 <= rng[2]], q2[q2 >= rng[1] & q2 <= rng[2]], type = "l", xlab = "p-value", ## changes by Alan
-  ylab = "q-value")
-plot(q2[q2 >= rng[1] & q2 <= rng[2]], (1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), type="l",
-  xlab="q-value cut-off", ylab="significant tests")
-plot((1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), q2[q2 >= rng[1] & q2 <= rng[2]] *
-  (1 + sum(q2 < rng[1])):sum(q2 <= rng[2]), type = "l", xlab = "significant tests",
-  ylab = "expected false positives")
-par(mfrow=c(1,1))
-}
-
-plot.qvalue <- function(x, ...) qplot(x, ...)
-
-qwrite <- function(qobj, filename="my-qvalue-results.txt") {
-#Input
-#=============================================================================
-#qobj: a q-value object returned by the qvalue function
-#filename: the name of the file where the results are written
-#
-#Output
-#=============================================================================
-#A file sent to "filename" with the following:
-#First row: the estimate of the proportion of true negatives, pi0
-#Second row: FDR significance level (if specified) ## change by Alan
-#Third row and below: the p-values (1st column), the estimated q-values (2nd column),
-#  and indicator of significance level if appropriate (3rd column)
-  cat(c("pi0:", qobj$pi0, "\n\n"), file=filename, append=FALSE)
-  if(any(names(qobj) == "fdr.level")) {
-    cat(c("FDR level:", qobj$fdr.level, "\n\n"), file=filename, append=TRUE)
-    cat(c("p-value q-value significant", "\n"), file=filename, append=TRUE) ## change by Alan (space-delimited now)
-#    for(i in 1:length(qobj$qval)) {
-#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\t", qobj$significant[i], "\n"), file=filename, append=TRUE)
-#    }
-    write(t(cbind(qobj$pval, qobj$qval, qobj$significant)), file=filename, ncolumns=3, append=TRUE) ## change by Alan
+  # Calculate pi0 estimate
+  pi0s <- pi0est(p, ...)
+  
+  # Calculate q-value estimates
+  m <- length(p)
+  u <- order(p)
+  v <- rank(p, ties.method="max") 
+  if (pfdr) {
+    qvals <- (pi0s$pi0 * m * p) / (v * (1 - (1 - p) ^ m))
+  } else {
+    qvals <- (pi0s$pi0 * m * p) / v
   }
-  else {
-    cat(c("p-value q-value", "\n"), file=filename, append=TRUE)
-#    for(i in 1:length(qobj$qval)) {
-#      cat(c(qobj$pval[i], "\t", qobj$qval[i], "\n"), file=filename, append=TRUE)
-#    }
-    write(t(cbind(qobj$pval, qobj$qval)), file=filename, ncolumns=2, append=TRUE)
+  qvals[u[m]] <- min(qvals[u[m]], 1)
+  for (i in (m - 1):1) {
+    qvals[u[i]] <- min(qvals[u[i]], qvals[u[i + 1]])
   }
-}
 
-qsummary <- function (qobj, cuts=c(0.0001, 0.001, 0.01, 0.025, 0.05, 0.10, 1), digits=getOption("digits"), ...) {
-  cat("\nCall:\n", deparse(qobj$call), "\n\n", sep = "")
-  cat("pi0:",format(qobj$pi0, digits=digits),"\n", sep="\t")
-  cat("\n")
-  cat("Cumulative number of significant calls:\n")
-  cat("\n")
-  counts <- sapply(cuts, function(x) c("p-value"=sum(qobj$pvalues < x), "q-value"=sum(qobj$qvalues < x)))
-  colnames(counts) <- paste("<", cuts, sep="")
-  print(counts)
-  cat("\n")
-  invisible(qobj)
+  # Calculate local FDR estimates  
+  lfdr <- lfdr(p = p, pi0 = pi0s$pi0, ...)
+  
+  # Return results
+  if (!is.null(fdr.level)) {
+    retval <- list(call = match.call(), pi0 = pi0s$pi0, qvalues = qvals,
+                   pvalues = p, lfdr = lfdr, fdr.level = fdr.level, 
+                   significant = (qvals <= fdr.level),
+                   pi0.lambda = pi0s$pi0.lambda, lambda = pi0s$lambda, 
+                   pi0.smooth = pi0s$pi0.smooth)
+  } else {
+    retval <- list(call = match.call(), pi0 = pi0s$pi0, qvalues = qvals, 
+                   pvalues = p, lfdr = lfdr, pi0.lambda = pi0s$pi0.lambda, 
+                   lambda = pi0s$lambda, pi0.smooth = pi0s$pi0.smooth)
+  }
+  class(retval) <- "qvalue"
+  return(retval)
 }
-
-summary.qvalue <- function(object, ...) {
-  qsummary(object, ...)
-}
-
