@@ -1,4 +1,4 @@
-qvalue 1.99.0: 
+qvalue 1.99.z: 
 This update of the qvalue package includes:
 - removal of tcltk usage
 - the use of ggplot2 in the plotting functions

@@ -1,12 +1,8 @@
 Package: qvalue
 Type: Package
 Title: Q-value estimation for false discovery rate control
-Version: 1.99.0
-Date: 2015-03-27
-Author: John Storey [aut, cre],
-  Andrew Bass [ctb],
-  Alan Dabney [ctb],
-  David Robinson [ctb]
+Version: 1.99.1
+Date: 2015-03-24
 Authors@R: c(
     person("John", "Storey", email = "jstorey@princeton.edu", role = c("aut", "cre")),
     person("Andrew", "Bass", email = "ajbass@princeton.edu", role = c("ctb")),
@@ -32,5 +28,10 @@ VignetteBuilder: knitr
 Imports: splines, ggplot2, grid, reshape2
 Suggests: knitr
 Depends: R(>= 2.10)
-URL: http://github.com/jdstorey/qvalue, http://qvalue.princeton.edu/
+URL: http://qvalue.princeton.edu/, http://github.com/jdstorey/qvalue
 License: LGPL
+Packaged: 2015-04-03 15:55:12 UTC; jstorey
+Author: John Storey [aut, cre],
+  Andrew Bass [ctb],
+  Alan Dabney [ctb],
+  David Robinson [ctb]
