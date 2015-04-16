@@ -1,7 +1,7 @@
 Package: qvalue
 Type: Package
 Title: Q-value estimation for false discovery rate control
-Version: 1.99.1
+Version: 2.0.0
 Date: 2015-03-24
 Authors@R: c(
     person("John", "Storey", email = "jstorey@princeton.edu", role = c("aut", "cre")),
